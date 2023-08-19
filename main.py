@@ -175,6 +175,7 @@ class Platform(pg.sprite.Sprite):
                 self.image = pg.Surface((PLATFORM_WIDTH, PLATFORM_HEIGHT))  
                 self.image.fill(pg.Color(COLOR))
                 self.rect = pg.Rect(x, y, PLATFORM_WIDTH, PLATFORM_HEIGHT)
+
 # Camera
 class Camera(object):
     def __init__(self, camera_func, width, height):
@@ -305,11 +306,23 @@ player = Player('hero/1.png', 90, 120, 25, 50)
 enemy = Enemy("enemy\enemy.png", 90, 120, 25, 50)
 platforms = []
 sprites.add(player)
-sprites.add(enemy)
 
 player.rect.x, player.rect.y = levels["level1"]["player_pos"][0], levels["level1"]["player_pos"][1]
 enemy.rect.x, enemy.rect.y = levels["level1"]["enemy_pos"][0], levels["level1"]["enemy_pos"][1]
 # menu image
+
+class Object(GameSprite):
+    def __init__(self, image: str, x: int, y: int, w: int, h: int) -> None:
+        super().__init__(image, x, y, w, h)
+        self.rect.width += 10
+        self.rect.height += 10
+        
+    def update(self):
+        pass
+        
+    def collide_player(self, player):
+        if pg.sprite.collide_rect(self, player):
+           print('Рядом') 
 
 image_menu = pg.transform.scale(pg.image.load("image/menu.png"), (800, 500))
 image_button_play = pg.transform.scale(pg.image.load("image/menu_play.jpg"), (100, 50))
@@ -342,25 +355,13 @@ for row in level: # вся строка
         if col == '2':
             pf = Platform(x, y, "asdasd", "image/ground/block_left.png")        
             sprites.add(pf)
-            platforms.append(pf)    
+            platforms.append(pf)
         if col == 'g':
-            pf = Platform(x, y, "asdas", "image\ground\ground.png")
+            pf = Platform(x, y, "asdasd", "image/ground/ground.png")        
             sprites.add(pf)
             platforms.append(pf)
-        if col == '4':
-            pf = Platform(x, y, "asdas", "image/ground/block_down_up_left.png")
-            sprites.add(pf)
-            platforms.append(pf)
-        if col == '5':
-            pf = Platform(x, y, "asdas", "image/ground/block_up_down_right.png")
-            sprites.add(pf)
-            platforms.append(pf)
-        if col == '6':
-            pf = Platform(x, y, "asdas", "image/ground/block_down.png")
-            sprites.add(pf)
-            platforms.append(pf)
-        if col == '7':
-            pf = Platform(x, y, "asdas", "image/ground/block_up_down.png")
+        if col == 'c':
+            pf = Platform(x, y, "asdasd", "image/ground/coblstone_up.png")
             sprites.add(pf)
             platforms.append(pf)
         x += PLATFORM_WIDTH #блоки платформы ставятся на ширине блоков
