@@ -16,21 +16,40 @@
         "1                                                                            2",
         "1                                                                            2",
         "1                                                                            2",
-        "1                                                                            2",                            
+        "1                                                                            2",
         "1                                                                            2",
         "1                                                                            2",
         "1                                                                            2",
         "1l----------------------------------------------------------------    ------r2",
-        "gggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg    gggggggg",
-        "gggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg    gggggggg",
-        "gggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg            ",
-        "gggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg            ",
-        "gggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg            ",
-        "gggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg            ",
-        "gggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg            ",
-        "ggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggcccccccccccc"
+        "ggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggttttggggggg2"
     ],
-        "player_pos":[69, 495],
-        "enemy_pos":[800, 495]
+    "player_pos":[69, 495],
+    "enemy_pos":[800, 495]
+    },
+    "level2":{"level":[
+        "ggg                                                                       ggg2",
+        "ggg                                                                       ggg2",
+        "ggg                                                                          t",
+        "ggg                                                                          t",
+        "ggg                                                                          t",
+        "ggg                                                                       ggg2",
+        "ggg                                                                       ggg2",
+        "ggg                                                                       ggg2",
+        "ggg                                                                       ggg2",
+        "ggg                                                                       ggg2",
+        "ggg                                                                       ggg2",
+        "ggg                                                                       ggg2",
+        "ggg                                                                       ggg2",
+        "ggg                                                                       ggg2",
+        "ggg               533334                                                  ggg2",
+        "ggg                                                                       ggg2",
+        "ggg                                                                       ggg2",
+        "ggg                                                                       ggg2",
+        "ggg                                                                       ggg2",
+        "ggg                                                                       ggg2",
+        "ggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg2"
+    ],
+    "player_pos":[173, 552],
+    "enemy_pos":[800, 495]
     }
 }
