@@ -1,5 +1,6 @@
 import pygame as pg
 import sys
+from random import choice
 import json
 pg.init()
 pg.font.init()
@@ -11,8 +12,9 @@ screen = pg.display.set_mode((W, H))
 
 clock = pg.time.Clock()
 
-background_images = [pg.transform.scale(pg.image.load(rf"image\oak_woods_v1.0\background\background_layer_{i}.png"), (W, H)).convert_alpha() for i in range(1, 4)]
+# background_images = [pg.transform.scale(pg.image.load(rf"image\oak_woods_v1.0\background\background_layer_{i}.png"), (W, H)).convert_alpha() for i in range(1, 4)]
 location = 'menu'
+
 
 
 # class
@@ -44,7 +46,7 @@ class Player(GameSprite):
         self.yvel = 0 # скорость вертикального перемещения
         self.xvel = 0
         self.onGround = False # На земле ли я?
-        self.MOVE_SPEED = 12
+        self.MOVE_SPEED = 15
 
         # Animations, image
         self.frame_animation = 0
@@ -154,8 +156,13 @@ class Player(GameSprite):
         for p in pfs:
             if pg.sprite.collide_rect(self, p):
                 if xvel > 0:                      # если движется вправо
+                    if self.side == 'left':
+                        self.xvel = 0  # обнуляем скорость ходьбы
+                    self.rect.right = p.rect.left  # то не движется вправо
                     self.rect.right = p.rect.left # то не движется вправо
                 if xvel < 0:                      # если движется влево
+                    if self.side == 'right':
+                        self.xvel = 0  # обнуляем скорость ходьбы
                     self.rect.left = p.rect.right # то не движется влево
 
                 if yvel > 0:                      # если падает вниз
@@ -176,7 +183,7 @@ class Player(GameSprite):
                     sublocation = 1
                     platforms.clear()
                     for e in sprites:
-                        if not isinstance(e, Player):
+                        if not isinstance(e, Player) and not isinstance(e, BG):
                             e.kill()
 
                     # pos player
@@ -200,24 +207,32 @@ class Camera(object):
     def __init__(self, camera_func, width, height):
         self.camera_func = camera_func
         self.state = pg.Rect(0, 0, width, height)
+        self.move_bool = False # False
+        self.l = 0
 	
     def apply(self, target):
         return target.rect.move(self.state.topleft)
 
     def update(self, target):
-        self.state = self.camera_func(self.state, target.rect)
-def camera_configure(camera, target_rect):
+        self.state = self.camera_func(self, self.state, target.rect)
+    
+def camera_configure(self, camera, target_rect):
+        l, t, _, _ = target_rect
+        _, _, w, h = camera
+        l, t = -l+W / 2, -t+H / 2
 
-    l, t, _, _ = target_rect
-    _, _, w, h = camera
-    l, t = -l+W / 2, -t+H / 2
+        l = min(0, l)                  # Не движемся дальше левой границы
+        l = max(-(camera.width-W), l)  # Не движемся дальше правой границы
+        t = max(-(camera.height-H), t) # Не движемся дальше нижней границы
+        t = min(0, t)                  # Не движемся дальше верхней границы
+    # else:
+    #     l, t = self.l, -30
+    #     if l > -1340:
+    #         self.l -= 10
+    #     _, _, w, h = camera
 
-    l = min(0, l)                  # Не движемся дальше левой границы
-    l = max(-(camera.width-W), l)  # Не движемся дальше правой границы
-    t = max(-(camera.height-H), t) # Не движемся дальше нижней границы
-    t = min(0, t)                  # Не движемся дальше верхней границы
-
-    return pg.Rect(l, t, w, h)  
+        return pg.Rect(l, t, w, h)
+    
 with open("levels.json", "r", encoding="utf-8") as f:
     levels = json.load(f)
 level = levels["level1"]["level"]
@@ -305,7 +320,11 @@ class Enemy(GameSprite):
                 if yvel < 0:                      # если движется вверх
                     self.rect.top = p.rect.bottom # то не движется вверх
                     self.yvel = 0                 # и энергия прыжка пропадает
-    
+
+class BG(GameSprite):
+    def __init__(self, image: str, x: int, y: int, w: int, h: int) -> None:
+        super().__init__(image, x, y, w, h)
+
 def render_text(text, f, x=False, y=False):
     text_surface = f.render(text, True, (255,255,255))
     if not x and not y:
@@ -318,16 +337,19 @@ def render_text(text, f, x=False, y=False):
         screen.blit(text_surface, (x, y))
 
 total_level_w = len(level[0])*30
-total_level_h = 21*30# Height == 21, 30 = width and height platform
+total_level_h = len(level)*30# Height == 21, 30 = width and height platform
 
 sprites = pg.sprite.Group()
-# Телепорт для перехода ищ локации
+background_images = [BG(fr'oak_woods_v1.0\background\background_layer_{i}.png', 0, 0, W, H) for i in range(1, 4)]
+# Телепорт для перехода из локации
 teleports = []
 camera = Camera(camera_configure, total_level_w, total_level_h)
 player = Player('hero/1.png', 90, 120, 25, 50)
 enemy = Enemy("enemy\enemy.png", 90, 120, 25, 50)
 platforms = []
 sprites.add(player)
+
+
 
 player.rect.x, player.rect.y = levels["level1"]["player_pos"][0], levels["level1"]["player_pos"][1]
 enemy.rect.x, enemy.rect.y = levels["level1"]["enemy_pos"][0], levels["level1"]["enemy_pos"][1]
@@ -346,64 +368,85 @@ class Object(GameSprite):
         if pg.sprite.collide_rect(self, player):
            print('Рядом') 
 
-image_menu = pg.transform.scale(pg.image.load("image/menu.png"), (800, 500))
-image_button_play = pg.transform.scale(pg.image.load("image/menu_play.jpg"), (100, 50))
-image_button_settings = pg.transform.scale(pg.image.load("image/menu_settings.jpg"), (100, 50))
-image_button_exit = pg.transform.scale(pg.image.load("image/menu_exit.jpg"), (100, 50))
-
-
-
 # level
 PLATFORM_WIDTH = PLATFORM_HEIGHT = 30
-def draw_location(l):
+def draw_location(l, n):
+    
     x=y=0 # координаты
     for row in l: # вся строка
         for col in row: # каждый символ
-            if col == "-":
-                #создаем блок, заливаем его цветом и рисеум его
-                pf = Platform(x, y, "#036a96", "image/ground/block_up.png")
-                sprites.add(pf)
-                platforms.append(pf)
-            if col == 'r':
-                pf = Platform(x, y, "#036a96", "image/ground/block_up_right.png")
-                sprites.add(pf)
-                platforms.append(pf)    
-            if col == "l":
-                pf = Platform(x, y, "asdasd", "image/ground/block_up_left.png")        
-                sprites.add(pf)
-                platforms.append(pf)    
-            if col == '1':
-                pf = Platform(x, y, "asdasd", "image/ground/block_right.png")        
-                sprites.add(pf)
-                platforms.append(pf)    
-            if col == '2':
-                pf = Platform(x, y, "asdasd", "image/ground/block_left.png")        
-                sprites.add(pf)
-                platforms.append(pf)
-            if col == 'g':
-                pf = Platform(x, y, "asdasd", "image/ground/ground.png")        
-                sprites.add(pf)
-                platforms.append(pf)
-            if col == 'c':
-                pf = Platform(x, y, "asdasd", "image/ground/coblstone_up.png")
-                sprites.add(pf)
-                platforms.append(pf)
-            if col == 't':
-                pf = Platform(x, y, "asdasd", "image/ground/coblstone_up.png", True)
-                teleports.append(pf)
-            if col == '3':
-                pf = Platform(x, y, "asdasd", "image/ground/ground_up.png", True)
-                sprites.add(pf)
-                platforms.append(pf)
-            if col == '4':
-                pf = Platform(x, y, "asdasd", "image/ground/ground_up_right.png", True)
-                sprites.add(pf)
-                platforms.append(pf)
-            if col == '5':
-                pf = Platform(x, y, "asdasd", "image/ground/ground_up_left.png", True)
-                sprites.add(pf)
-                platforms.append(pf)
-            x += PLATFORM_WIDTH #блоки платформы ставятся на ширине блоков
+            if n == 1:
+                if col == "-":
+                    #создаем блок, заливаем его цветом и рисеум его
+                    pf = Platform(x, y, "#036a96", "image/ground/block_up.png")
+                    sprites.add(pf)
+                    platforms.append(pf)
+                if col == 'r':
+                    pf = Platform(x, y, "#036a96", "image/ground/block_up_right.png")
+                    sprites.add(pf)
+                    platforms.append(pf)    
+                if col == "l":
+                    pf = Platform(x, y, "asdasd", "image/ground/block_up_left.png")        
+                    sprites.add(pf)
+                    platforms.append(pf)    
+                if col == '1':
+                    pf = Platform(x, y, "asdasd", "image/ground/block_right.png")        
+                    sprites.add(pf)
+                    platforms.append(pf)    
+                if col == '2':
+                    pf = Platform(x, y, "asdasd", "image/ground/block_left.png")        
+                    sprites.add(pf)
+                    platforms.append(pf)
+                if col == 'g':
+                    pf = Platform(x, y, "asdasd", "image/ground/ground.png")        
+                    sprites.add(pf)
+                    platforms.append(pf)
+                if col == 'c':
+                    pf = Platform(x, y, "asdasd", "image/ground/coblstone_up.png")
+                    sprites.add(pf)
+                    platforms.append(pf)
+                if col == 't':
+                    pf = Platform(x, y, "asdasd", "image/ground/coblstone_up.png", True)
+                    teleports.append(pf)
+                if col == '3':
+                    pf = Platform(x, y, "asdasd", "image/ground/ground_up.png", True)
+                    sprites.add(pf)
+                    platforms.append(pf)
+                if col == '4':
+                    pf = Platform(x, y, "asdasd", "image/ground/ground_up_right.png", True)
+                    sprites.add(pf)
+                    platforms.append(pf)
+                if col == '5':
+                    pf = Platform(x, y, "asdasd", "image/ground/ground_up_left.png", True)
+                    sprites.add(pf)
+                    platforms.append(pf)
+                x += PLATFORM_WIDTH #блоки платформы ставятся на ширине блоков
+            elif n == 2:
+                grounds = ["image/ground/ground1.png", "image/ground/ground2.png"]
+                if col == 'g':
+                    pf = Platform(x, y, "asdasd", "image/ground/ground.png")        
+                    sprites.add(pf)
+                    platforms.append(pf)
+                if col == 'r':
+                    pf = Platform(x, y, "asdasd", choice(grounds))
+                    sprites.add(pf)
+                    platforms.append(pf)
+                if col == 't':
+                    pf = Platform(x, y, "asdasd", "image/ground/coblstone_up.png", True)
+                    teleports.append(pf)
+                if col == '3':
+                    pf = Platform(x, y, "asdasd", "image/ground/ground_up.png", True)
+                    sprites.add(pf)
+                    platforms.append(pf)
+                if col == '4':
+                    pf = Platform(x, y, "asdasd", "image/ground/ground_up_right.png", True)
+                    sprites.add(pf)
+                    platforms.append(pf)
+                if col == '5':
+                    pf = Platform(x, y, "asdasd", "image/ground/ground_up_left.png", True)
+                    sprites.add(pf)
+                    platforms.append(pf)
+                x += PLATFORM_WIDTH #блоки платформы ставятся на ширине блоков
         y += PLATFORM_HEIGHT    #то же самое и с высотой
         x = 0                   #на каждой новой строчке начинаем с нуля
 
@@ -420,12 +463,10 @@ while True:
             print(mouse)
 
     # draw background
-    for i in background_images:
-        screen.blit(i, (0, 0))
 
     if location == 'menu':
         for i in background_images:
-            screen.blit(i, (0, 0))
+            i.draw()
         render_text("MYGAME", font, False, 100)
         render_text("ИГРАТЬ", font, False, H//2-100)
         render_text("НАСТРОЙКИ", font)
@@ -443,21 +484,25 @@ while True:
             print(location)
 
     if location == 'game':
+        for i in background_images:
+            i.draw()
         if sublocation == 0:
             pg.mouse.set_visible(False)
             if not draw_location_bool:
-                draw_location(level)
+                draw_location(level, 1)
                 draw_location_bool = True
             player.update(platforms)
             camera.update(player)
             enemy.update()
 
+
         if sublocation == 1:
             pg.mouse.set_visible(False)
 
             if not draw_location_bool:
-                draw_location(level2)
+                draw_location(level2, 2)
                 draw_location_bool = True
+            
             player.update(platforms)
             camera.update(player)
             enemy.update()
